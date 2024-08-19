@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Via Ads</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 20px;
+        }
+        h1 {
+            text-align: center;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+        }
+        .button {
+            background-color: #007BFF;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+        .button:hover {
+            background-color: #0056b3;
+        }
+        .input-field {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            box-sizing: border-box;
+        }
+        .step {
+            display: none;
+        }
+        .step.active {
+            display: block;
+        }
+        .channel-list {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Via Ads</h1>
+    <div class="container">
+        <!-- Step 1: Enter YouTube Channel Name -->
+        <div class="step active" id="step1">
+            <h2>Step 1: Enter Your YouTube Channel Name</h2>
+            <input type="text" id="channelName" class="input-field" placeholder="Enter your YouTube Channel Name">
+            <button class="button" onclick="submitChannel()">Next</button>
+        </div>
+
+        <!-- Step 2: Add a Channel Card -->
+        <div class="step" id="step2">
+            <h2>Step 2: Select a Channel Card</h2>
+            <p>Select a channel from the list below (not the one you entered):</p>
+            <div class="channel-list" id="channelList"></div>
+        </div>
+    </div>
+
+    <script>
+        let enteredChannel = '';
+
+        function showStep(step) {
+            const steps = document.querySelectorAll('.step');
+            steps.forEach((stepDiv, index) => {
+                stepDiv.classList.toggle('active', index + 1 === step);
+            });
+        }
+
+        function submitChannel() {
+            const channelName = document.getElementById('channelName').value;
+            if (channelName) {
+                enteredChannel = channelName;
+
+                // Call the Netlify Function to store the channel name server-side
+                fetch('/.netlify/functions/addChannel', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ channelName })
+                })
+                .then(response => response.json())
+                .then(() => {
+                    // Move to the next step
+                    showStep(2);
+                    loadChannelList();
+                })
+                .catch(error => console.error('Error:', error));
+            } else {
+                alert("Please enter a channel name.");
+            }
+        }
+
+        function loadChannelList() {
+            // Fetch the list of channels from the server
+            fetch('/.netlify/functions/getChannels')
+                .then(response => response.json())
+                .then(data => {
+                    const channelListDiv = document.getElementById('channelList');
+                    channelListDiv.innerHTML = '';
+
+                    data.channels.forEach(channel => {
+                        if (channel !== enteredChannel) {
+                            const channelCard = document.createElement('div');
+                            channelCard.textContent = channel;
+                            channelCard.className = 'channel-card';
+                            channelCard.onclick = () => addChannelCard(channel);
+                            channelListDiv.appendChild(channelCard);
+                        }
+                    });
+                })
+                .catch(error => console.error('Error:', error));
+        }
+
+        function addChannelCard(channel) {
+            alert(`You selected ${channel} to be added to your video.`);
+            // Here you can add further logic to handle the selected channel
+        }
+    </script>
+</body>
+</html>
